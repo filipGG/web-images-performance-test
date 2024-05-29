@@ -1,7 +1,6 @@
 import * as THREE from 'three';
 import { KTX2Loader } from 'three/addons/loaders/KTX2Loader.js';
 import { Ktx2Mesh } from './ktx2-mesh';
-import { PngMesh } from './png-mesh';
 import { OrbitControls } from 'three/examples/jsm/Addons.js';
 
 export class Viewer {
@@ -14,7 +13,6 @@ export class Viewer {
   private readonly _ktx2Loader = new KTX2Loader().setTranscoderPath('/ktx2-png-compare/').detectSupport(this._renderer);
 
   private readonly _ktx2Mesh: THREE.Mesh;
-  private readonly _pngMesh: THREE.Mesh;
 
   constructor() {
     this._scene.background = new THREE.Color(0xffffff);
@@ -25,27 +23,12 @@ export class Viewer {
     this._controls = new OrbitControls(this._camera, this._renderer.domElement);
 
     this._ktx2Mesh = new Ktx2Mesh('Ångström1-resized.ktx2', this._ktx2Loader);
-    //this._ktx2Mesh = new Ktx2Mesh('kvarsiten-resized.ktx2', this._ktx2Loader);
     this._scene.add(this._ktx2Mesh);
-
-    this._pngMesh = new PngMesh('Ångström1-resized.png', this._imageBitmapLoader);
-    //this._pngMesh = new PngMesh('kvarsiten-resized.png', this._imageBitmapLoader);
-    this._scene.add(this._pngMesh);
 
     setInterval(() => {
       this._controls.update();
       this._renderer.render(this._scene, this._camera);
     }, 16);
-  }
-
-  public showKTX2() {
-    this._pngMesh.visible = false;
-    this._ktx2Mesh.visible = true;
-  }
-
-  public showPNG() {
-    this._ktx2Mesh.visible = false;
-    this._pngMesh.visible = true;
   }
 
   private configureRenderer() {

@@ -12,7 +12,6 @@ export class Ktx2Mesh extends THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMat
   }
 
   private async setup() {
-    this.visible = false;
     const texture = await this._ktx2Loader.loadAsync(this._imagePath);
 
     const { width, height } = texture.image;

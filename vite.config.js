@@ -1,4 +1,4 @@
 /** @type {import('vite').UserConfig} */
 export default {
-  base: '/ktx2-png-compare/',
+  base: '/web-images-performance-test/',
 };

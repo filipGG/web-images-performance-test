@@ -3,6 +3,7 @@ import { Viewer } from './viewer';
 
 const viewer = new Viewer();
 
+/*
 const panel = new GUI();
 
 const settings = {
@@ -16,3 +17,4 @@ const settings = {
 
 panel.add(settings, 'show png');
 panel.add(settings, 'show ktx2');
+*/

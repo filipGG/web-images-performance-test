@@ -10,9 +10,12 @@ export class Viewer {
   private readonly _controls: OrbitControls;
 
   private readonly _imageBitmapLoader = new THREE.ImageBitmapLoader();
-  private readonly _ktx2Loader = new KTX2Loader().setTranscoderPath('/ktx2-png-compare/').detectSupport(this._renderer);
+  private readonly _ktx2Loader = new KTX2Loader()
+    .setTranscoderPath('/web-images-performance-test/')
+    .detectSupport(this._renderer);
 
-  private readonly _ktx2Mesh: THREE.Mesh;
+  private _ktx2Mesh?: THREE.Mesh;
+  private _pngMesh?: THREE.Mesh;
 
   constructor() {
     this._scene.background = new THREE.Color(0xffffff);
@@ -22,8 +25,38 @@ export class Viewer {
 
     this._controls = new OrbitControls(this._camera, this._renderer.domElement);
 
-    this._ktx2Mesh = new Ktx2Mesh('Ångström1-resized.ktx2', this._ktx2Loader);
-    this._scene.add(this._ktx2Mesh);
+    for (let i = 1; i <= 5; i++) {
+      const mesh = new Ktx2Mesh(`Ångström1-resized-ktx/Ångström1-resized-${i}.ktx2`, this._ktx2Loader);
+      mesh.position.x += Math.random() * 2000 - 1000;
+      mesh.position.y += Math.random() * 2000 - 1000;
+      this._scene.add(mesh);
+    }
+
+    /*
+    for (let i = 1; i <= 10; i++) {
+      const mesh = new Ktx2Mesh(`Ångström1-resized-ktx-etc1/Ångström1-resized-etc1-${i}.ktx2`, this._ktx2Loader);
+      mesh.position.x += Math.random() * 2000 - 1000;
+      mesh.position.y += Math.random() * 2000 - 1000;
+      this._scene.add(mesh);
+    }
+    */
+
+    /*
+    for (let i = 1; i <= 10; i++) {
+      const mesh = new PngMesh(`Ångström1-resized-png/Ångström1-resized-${i}.png`, this._imageBitmapLoader);
+      mesh.position.x += Math.random() * 2000 - 1000;
+      mesh.position.y += Math.random() * 2000 - 1000;
+      this._scene.add(mesh);
+    }
+    */
+
+    //this._ktx2Mesh = new Ktx2Mesh('Ångström1-resized.ktx2', this._ktx2Loader);
+    //this._ktx2Mesh = new Ktx2Mesh('kvarsiten-resized.ktx2', this._ktx2Loader);
+    //this._scene.add(this._ktx2Mesh);
+
+    //this._pngMesh = new PngMesh('Ångström1-resized.png', this._imageBitmapLoader);
+    //this._pngMesh = new PngMesh('kvarsiten-resized.png', this._imageBitmapLoader);
+    //this._scene.add(this._pngMesh);
 
     setInterval(() => {
       this._controls.update();

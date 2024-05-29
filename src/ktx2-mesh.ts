@@ -13,12 +13,8 @@ export class Ktx2Mesh extends THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMat
 
   private async setup() {
     const texture = await this._ktx2Loader.loadAsync(this._imagePath);
-
     const { width, height } = texture.image;
-
-    console.log('loaded ktx2 with dimensions: ', width, height);
-
-    this.geometry = this.flipY(new THREE.PlaneGeometry(width, height));
+    this.geometry = this.flipY(new THREE.PlaneGeometry(width, height, 100, 100));
     this.material = new THREE.MeshBasicMaterial({
       color: 0xffffff,
       map: texture,

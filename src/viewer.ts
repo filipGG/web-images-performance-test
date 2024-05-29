@@ -39,12 +39,12 @@ export class Viewer {
   }
 
   public showKTX2() {
-    //this._pngMesh.visible = false;
+    this._pngMesh.visible = false;
     this._ktx2Mesh.visible = true;
   }
 
   public showPNG() {
-    //this._ktx2Mesh.visible = false;
+    this._ktx2Mesh.visible = false;
     this._pngMesh.visible = true;
   }
 

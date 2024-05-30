@@ -1,8 +1,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/Addons.js';
-import * as ImageDef512 from './image_def_512.json';
-import * as ImageDef256 from './image_def_256.json';
 import { Viewer } from '../viewer';
+import { ImageDefTile, getImageDef256 } from './tile-json-loader';
 
 export class SimpleTileViewer implements Viewer {
   private readonly _renderer = new THREE.WebGLRenderer();
@@ -30,10 +29,12 @@ export class SimpleTileViewer implements Viewer {
       this._shouldRerender = true;
     });
     this._imageBitmapLoader.manager.onLoad = () => {
+      console.log('bitmaps loaded');
       this._shouldRerender = true;
     };
 
-    this.load();
+    //this.load();
+    this.loadWithChunks();
 
     this._intervalHandle = setInterval(() => {
       this._controls.update();
@@ -74,7 +75,8 @@ export class SimpleTileViewer implements Viewer {
   }
 
   private async load() {
-    for (const tile of ImageDef256.Tiles) {
+    const imageDef = getImageDef256();
+    for (const tile of imageDef.Tiles) {
       if (!tile.dataUrl) {
         //this.addWithoutTexture(tile);
       } else {
@@ -83,7 +85,42 @@ export class SimpleTileViewer implements Viewer {
     }
   }
 
-  private async addWithoutTexture(tile: any) {
+  private async loadWithChunks() {
+    const imageDef = getImageDef256();
+    const chunks = this.chunkTiles(imageDef.Tiles);
+
+    for (let i = 0; i < chunks.length; i++) {
+      const currentChunk = chunks[i];
+      await this.loadChunk(currentChunk);
+    }
+  }
+
+  private async loadChunk(tiles: ImageDefTile[]) {
+    const promises = tiles.map((tile) => {
+      if (!tile.dataUrl) {
+        return Promise.resolve();
+        //return this.addWithoutTexture(tile);
+      } else {
+        return this.addWithTexture(tile);
+      }
+    });
+
+    await Promise.all(promises);
+  }
+
+  private chunkTiles(tiles: ImageDefTile[]) {
+    const chunks: ImageDefTile[][] = [];
+    const chunkSize = 100;
+
+    for (let i = 0; i < tiles.length; i += chunkSize) {
+      const chunk = tiles.slice(i, i + chunkSize);
+      chunks.push(chunk);
+    }
+
+    return chunks;
+  }
+
+  private async addWithoutTexture(tile: ImageDefTile) {
     const geo = new THREE.PlaneGeometry(tile.Width, tile.Height);
     const mat = new THREE.MeshBasicMaterial({ transparent: true, color: 0xff0000 });
     const mesh = new THREE.Mesh(geo, mat);
@@ -92,13 +129,14 @@ export class SimpleTileViewer implements Viewer {
     this._scene.add(mesh);
   }
 
-  private async addWithTexture(tile: any) {
-    const bitmap = await this._imageBitmapLoader.loadAsync(tile.dataUrl);
+  private async addWithTexture(tile: ImageDefTile) {
+    const bitmap = await this._imageBitmapLoader.loadAsync(tile.dataUrl!.quarter.dataUrl);
     const texture = new THREE.CanvasTexture(bitmap);
 
-    const { width, height } = texture.image;
+    const { Width, Height } = tile;
+    console.log(tile);
 
-    const geo = new THREE.PlaneGeometry(width, height);
+    const geo = new THREE.PlaneGeometry(Width, Height);
     const mat = new THREE.MeshBasicMaterial({ transparent: true, map: texture });
     const mesh = new THREE.Mesh(geo, mat);
     mesh.position.x = tile.X - 6000;

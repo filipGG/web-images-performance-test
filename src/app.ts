@@ -29,5 +29,7 @@ export class App {
     panel.add(settings, 'none');
     panel.add(settings, 'fullsize');
     panel.add(settings, 'simpleTileViewer');
+
+    settings.simpleTileViewer();
   }
 }

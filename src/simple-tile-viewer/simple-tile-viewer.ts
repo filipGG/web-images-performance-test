@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/Addons.js';
-import * as ImageDef from './image_def_512.json';
+import * as ImageDef512 from './image_def_512.json';
+import * as ImageDef256 from './image_def_256.json';
 import { Viewer } from '../viewer';
 
 export class SimpleTileViewer implements Viewer {
@@ -60,19 +61,36 @@ export class SimpleTileViewer implements Viewer {
   }
 
   private async load() {
-    for (const tile of ImageDef.Tiles) {
-      const bitmap = await this._imageBitmapLoader.loadAsync(tile.dataUrl);
-      const texture = new THREE.CanvasTexture(bitmap);
-
-      const { width, height } = texture.image;
-
-      const geo = new THREE.PlaneGeometry(width, height);
-      const mat = new THREE.MeshBasicMaterial({ transparent: true, map: texture });
-      const mesh = new THREE.Mesh(geo, mat);
-      mesh.position.x = tile.X - 6000;
-      mesh.position.y = tile.Y - 6000;
-      this._scene.add(mesh);
+    for (const tile of ImageDef256.Tiles) {
+      if (!tile.dataUrl) {
+        //this.addWithoutTexture(tile);
+      } else {
+        this.addWithTexture(tile);
+      }
     }
+  }
+
+  private async addWithoutTexture(tile: any) {
+    const geo = new THREE.PlaneGeometry(tile.Width, tile.Height);
+    const mat = new THREE.MeshBasicMaterial({ transparent: true, color: 0xff0000 });
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.position.x = tile.X - 6000;
+    mesh.position.y = tile.Y - 6000;
+    this._scene.add(mesh);
+  }
+
+  private async addWithTexture(tile: any) {
+    const bitmap = await this._imageBitmapLoader.loadAsync(tile.dataUrl);
+    const texture = new THREE.CanvasTexture(bitmap);
+
+    const { width, height } = texture.image;
+
+    const geo = new THREE.PlaneGeometry(width, height);
+    const mat = new THREE.MeshBasicMaterial({ transparent: true, map: texture });
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.position.x = tile.X - 6000;
+    mesh.position.y = tile.Y - 6000;
+    this._scene.add(mesh);
   }
 
   private configureRenderer() {

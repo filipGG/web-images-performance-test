@@ -14,6 +14,8 @@ export class SimpleTileViewer implements Viewer {
 
   private readonly _intervalHandle?: any;
 
+  private _shouldRerender = false;
+
   constructor() {
     this._scene.background = new THREE.Color(0xffffff);
     this._imageBitmapLoader.setOptions({ imageOrientation: 'flipY' });
@@ -24,11 +26,22 @@ export class SimpleTileViewer implements Viewer {
     this._controls = new OrbitControls(this._camera, this._renderer.domElement);
     this._controls.enableRotate = false;
 
+    this._controls.addEventListener('change', () => {
+      this._shouldRerender = true;
+    });
+    this._imageBitmapLoader.manager.onLoad = () => {
+      this._shouldRerender = true;
+    };
+
     this.load();
 
     this._intervalHandle = setInterval(() => {
       this._controls.update();
-      this._renderer.render(this._scene, this._camera);
+
+      if (this._shouldRerender) {
+        this._renderer.render(this._scene, this._camera);
+        this._shouldRerender = false;
+      }
     }, 16);
   }
 

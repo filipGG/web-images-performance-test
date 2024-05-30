@@ -1,19 +1,20 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/Addons.js';
-import { Viewer } from '../viewer';
 import { ImageDefTile, getImageDef256 } from './tile-json-loader';
+import { Tile } from './tile';
 
-export class SimpleTileViewer implements Viewer {
-  private readonly _renderer = new THREE.WebGLRenderer();
+export class SimpleTileViewer {
+  private readonly _renderer = new THREE.WebGLRenderer({ antialias: true });
   private readonly _scene = new THREE.Scene();
   private readonly _camera = new THREE.PerspectiveCamera();
   private readonly _controls: OrbitControls;
 
   private readonly _imageBitmapLoader = new THREE.ImageBitmapLoader();
-
   private readonly _intervalHandle?: any;
 
-  private _shouldRerender = false;
+  private readonly _tiles: Tile[] = [];
+
+  private _shouldRerender = true;
 
   constructor() {
     this._scene.background = new THREE.Color(0xffffff);
@@ -29,119 +30,81 @@ export class SimpleTileViewer implements Viewer {
       this._shouldRerender = true;
     });
     this._imageBitmapLoader.manager.onLoad = () => {
-      console.log('bitmaps loaded');
       this._shouldRerender = true;
     };
 
-    //this.load();
-    this.loadWithChunks();
+    this.createTiles();
 
     this._intervalHandle = setInterval(() => {
       this._controls.update();
 
       if (this._shouldRerender) {
+        this.updateZoomLevel();
         this._renderer.render(this._scene, this._camera);
         this._shouldRerender = false;
       }
     }, 16);
   }
 
-  public dispose() {
-    clearInterval(this._intervalHandle);
-    this.diposeAllTexturesInScene();
-    this._controls.dispose();
-    this._renderer.dispose();
-    this._renderer.domElement.parentElement?.removeChild(this._renderer.domElement);
+  private async updateZoomLevel() {
+    const { inView, outsideView } = this.getTilesInCameraView();
+
+    for (const tile of inView) {
+      tile.insideView(this._camera.position.z);
+    }
+
+    for (const tile of outsideView) {
+      tile.outsideView();
+    }
   }
 
-  private diposeAllTexturesInScene() {
-    const disposables: any[] = [];
-
-    this._scene.traverse((child: any) => {
-      if (child.material) {
-        disposables.push(child);
-      }
-    });
-
-    disposables.forEach((child) => {
-      child.parent.remove(child);
-      child.material.dispose();
-      if (child.material.map) {
-        child.material.map.dispose();
-      }
-    });
-
-    this._scene.clear();
-  }
-
-  private async load() {
+  private async createTiles() {
     const imageDef = getImageDef256();
-    for (const tile of imageDef.Tiles) {
-      if (!tile.dataUrl) {
-        //this.addWithoutTexture(tile);
-      } else {
-        this.addWithTexture(tile);
-      }
+    const tilesWithData = imageDef.Tiles.filter((tile) => tile.dataUrl != undefined);
+
+    for (const tile of tilesWithData) {
+      await this.addWithTexture(tile);
     }
-  }
-
-  private async loadWithChunks() {
-    const imageDef = getImageDef256();
-    const chunks = this.chunkTiles(imageDef.Tiles);
-
-    for (let i = 0; i < chunks.length; i++) {
-      const currentChunk = chunks[i];
-      await this.loadChunk(currentChunk);
-    }
-  }
-
-  private async loadChunk(tiles: ImageDefTile[]) {
-    const promises = tiles.map((tile) => {
-      if (!tile.dataUrl) {
-        return Promise.resolve();
-        //return this.addWithoutTexture(tile);
-      } else {
-        return this.addWithTexture(tile);
-      }
-    });
-
-    await Promise.all(promises);
-  }
-
-  private chunkTiles(tiles: ImageDefTile[]) {
-    const chunks: ImageDefTile[][] = [];
-    const chunkSize = 100;
-
-    for (let i = 0; i < tiles.length; i += chunkSize) {
-      const chunk = tiles.slice(i, i + chunkSize);
-      chunks.push(chunk);
-    }
-
-    return chunks;
-  }
-
-  private async addWithoutTexture(tile: ImageDefTile) {
-    const geo = new THREE.PlaneGeometry(tile.Width, tile.Height);
-    const mat = new THREE.MeshBasicMaterial({ transparent: true, color: 0xff0000 });
-    const mesh = new THREE.Mesh(geo, mat);
-    mesh.position.x = tile.X - 6000;
-    mesh.position.y = tile.Y - 6000;
-    this._scene.add(mesh);
   }
 
   private async addWithTexture(tile: ImageDefTile) {
-    const bitmap = await this._imageBitmapLoader.loadAsync(tile.dataUrl!.quarter.dataUrl);
-    const texture = new THREE.CanvasTexture(bitmap);
+    const tileMesh = new Tile(tile, this._imageBitmapLoader);
+    this._tiles.push(tileMesh);
+    this._scene.add(tileMesh);
 
-    const { Width, Height } = tile;
-    console.log(tile);
+    tileMesh.position.x -= 6000;
+    tileMesh.position.y -= 6000;
+  }
 
-    const geo = new THREE.PlaneGeometry(Width, Height);
-    const mat = new THREE.MeshBasicMaterial({ transparent: true, map: texture });
-    const mesh = new THREE.Mesh(geo, mat);
-    mesh.position.x = tile.X - 6000;
-    mesh.position.y = tile.Y - 6000;
-    this._scene.add(mesh);
+  private getTilesInCameraView() {
+    console.time('a');
+    const topDownRatio = this._camera.getFilmHeight() / this._camera.getFocalLength();
+    const topDownLength = topDownRatio * this._camera.position.z;
+    const topDownLengthHalf = topDownLength / 2;
+
+    const leftRightRatio = this._camera.getFilmWidth() / this._camera.getFocalLength();
+    const leftRightLength = leftRightRatio * this._camera.position.z;
+    const leftRightLengthHalf = leftRightLength / 2;
+
+    const left = this._camera.position.x - leftRightLengthHalf;
+    const right = this._camera.position.x + leftRightLengthHalf;
+    const top = this._camera.position.y + topDownLengthHalf;
+    const bottom = this._camera.position.y - topDownLengthHalf;
+
+    const inView: Tile[] = [];
+    const outsideView: Tile[] = [];
+
+    this._tiles.forEach((tile) => {
+      if (tile.position.x > left && tile.position.x < right && tile.position.y < top && tile.position.y > bottom) {
+        inView.push(tile);
+      } else {
+        outsideView.push(tile);
+      }
+    });
+
+    console.timeEnd('a');
+
+    return { inView, outsideView };
   }
 
   private configureRenderer() {
@@ -164,7 +127,8 @@ export class SimpleTileViewer implements Viewer {
     this._camera.aspect = innerWidth / innerHeight;
     this._camera.near = 0.1;
     this._camera.far = 1_000_000;
-    this._camera.position.set(0, 0, 5000);
+
+    this._camera.position.z = 10000;
 
     this._camera.updateProjectionMatrix();
 

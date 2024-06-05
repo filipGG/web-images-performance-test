@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/Addons.js';
-import { ImageDefTile, getImageDef256 } from './tile-json-loader';
+import { ImageDefTile, getImageDef256, getImageDef512 } from './tile-json-loader';
 import { Tile } from './tile';
+import { Loader } from '../loader';
 
 export class SimpleTileViewer {
   private readonly _renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -9,7 +10,7 @@ export class SimpleTileViewer {
   private readonly _camera = new THREE.PerspectiveCamera();
   private readonly _controls: OrbitControls;
 
-  private readonly _imageBitmapLoader = new THREE.ImageBitmapLoader();
+  private readonly _loader = new Loader();
   private readonly _intervalHandle?: any;
 
   private readonly _tiles: Tile[] = [];
@@ -18,7 +19,6 @@ export class SimpleTileViewer {
 
   constructor() {
     this._scene.background = new THREE.Color(0xffffff);
-    this._imageBitmapLoader.setOptions({ imageOrientation: 'flipY' });
 
     this.configureRenderer();
     this.configureCamera();
@@ -29,7 +29,8 @@ export class SimpleTileViewer {
     this._controls.addEventListener('change', () => {
       this._shouldRerender = true;
     });
-    this._imageBitmapLoader.manager.onLoad = () => {
+
+    this._loader.onLoad = () => {
       this._shouldRerender = true;
     };
 
@@ -59,7 +60,7 @@ export class SimpleTileViewer {
   }
 
   private async createTiles() {
-    const imageDef = getImageDef256();
+    const imageDef = getImageDef512();
     const tilesWithData = imageDef.Tiles.filter((tile) => tile.dataUrl != undefined);
 
     for (const tile of tilesWithData) {
@@ -68,7 +69,7 @@ export class SimpleTileViewer {
   }
 
   private async addWithTexture(tile: ImageDefTile) {
-    const tileMesh = new Tile(tile, this._imageBitmapLoader);
+    const tileMesh = new Tile(tile, this._loader);
     this._tiles.push(tileMesh);
     this._scene.add(tileMesh);
 
@@ -77,7 +78,6 @@ export class SimpleTileViewer {
   }
 
   private getTilesInCameraView() {
-    console.time('a');
     const topDownRatio = this._camera.getFilmHeight() / this._camera.getFocalLength();
     const topDownLength = topDownRatio * this._camera.position.z;
     const topDownLengthHalf = topDownLength / 2;
@@ -94,17 +94,29 @@ export class SimpleTileViewer {
     const inView: Tile[] = [];
     const outsideView: Tile[] = [];
 
-    this._tiles.forEach((tile) => {
-      if (tile.position.x > left && tile.position.x < right && tile.position.y < top && tile.position.y > bottom) {
+    for (let i = 0; i < this._tiles.length; i++) {
+      const tile = this._tiles[i];
+
+      if (this.isTileInView(tile, left, right, top, bottom)) {
         inView.push(tile);
       } else {
         outsideView.push(tile);
       }
-    });
-
-    console.timeEnd('a');
+    }
 
     return { inView, outsideView };
+  }
+
+  private isTileInView(tile: Tile, left: number, right: number, top: number, bottom: number) {
+    if (
+      tile.position.x > left &&
+      tile.position.x < right &&
+      tile.position.y < top &&
+      tile.position.y > bottom
+    ) {
+      return true;
+    }
+    return false;
   }
 
   private configureRenderer() {

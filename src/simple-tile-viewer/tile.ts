@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { ImageDefTile } from './tile-json-loader';
+import { Loader } from '../loader';
 
 export enum ImageQuality {
   Low = 'Low',
@@ -12,7 +13,7 @@ export class Tile extends THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMateria
 
   constructor(
     private readonly _def: ImageDefTile,
-    private readonly _loader: THREE.ImageBitmapLoader,
+    private readonly _loader: Loader,
   ) {
     super();
 
@@ -76,8 +77,9 @@ export class Tile extends THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMateria
 
   private async load(quality: ImageQuality) {
     const dataUrl = this.getDataUrl(quality);
-    const bitmap = await this._loader.loadAsync(dataUrl);
-    const texture = new THREE.CanvasTexture(bitmap);
+    const texture = await this._loader.load(dataUrl);
+    //texture.generateMipmaps = false;
+
     this.material.map?.dispose();
     this.material.map = texture;
     this.material.needsUpdate = true;
@@ -86,7 +88,10 @@ export class Tile extends THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMateria
   private async setup() {
     const { Width, Height, X, Y } = this._def;
     this.geometry = new THREE.PlaneGeometry(Width, Height);
-    this.material = new THREE.MeshBasicMaterial({ transparent: true, color: new THREE.Color(0x000000) });
+    this.material = new THREE.MeshBasicMaterial({
+      transparent: true,
+      color: new THREE.Color(0x000000),
+    });
     this.position.x = X;
     this.position.y = Y;
     this.material.needsUpdate = true;

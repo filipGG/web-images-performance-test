@@ -1,4 +1,6 @@
 import * as ImageDef256 from './image_def_256.json';
+//import * as ImageDef512 from './image_def_512.json';
+import * as ImageDef512 from './image_def_512_v2.json';
 
 export interface ImageData {
   full: ImageDataUrl;
@@ -25,4 +27,8 @@ export interface ImageDef {
 
 export function getImageDef256() {
   return ImageDef256 as ImageDef;
+}
+
+export function getImageDef512() {
+  return ImageDef512 as ImageDef;
 }

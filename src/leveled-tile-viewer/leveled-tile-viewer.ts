@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/Addons.js';
 import { Loader } from '../loader';
 import { Level } from './level';
-import { LevelDef, getLeveledImageDefÅngström } from './leveled-tile-json-loader';
+import { getLeveledImageDefÅngström } from './leveled-tile-json-loader';
 import GUI from 'three/examples/jsm/libs/lil-gui.module.min.js';
 
 export class LeveledTileViewer {

@@ -10,7 +10,7 @@ export class Loader {
   private readonly _imageBitmapLoader = new THREE.ImageBitmapLoader();
 
   private readonly _queue: QueuedLoad[] = [];
-  private readonly _maxParallelLoads = 10;
+  private readonly _maxParallelLoads = 6;
   private _isProcessing = false;
 
   constructor() {

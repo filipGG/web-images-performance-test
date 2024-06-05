@@ -3,7 +3,7 @@ import { SimpleTileViewer } from './simple-tile-viewer/simple-tile-viewer';
 import { LeveledTileViewer } from './leveled-tile-viewer/leveled-tile-viewer';
 
 export class App {
-  private _currentViewer = new LeveledTileViewer();
+  private _currentViewer = new SimpleTileViewer();
 
   constructor() {
     console.log('hello: ', this._currentViewer);

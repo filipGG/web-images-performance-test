@@ -48,7 +48,7 @@ export class THREE_FPTileLayer extends THREE.Mesh<THREE.PlaneGeometry, THREE.Mes
     this.geometry = new THREE.PlaneGeometry(this.width, this.height);
     this.material = new THREE.MeshBasicMaterial({
       transparent: true,
-      color: new THREE.Color(0x000000),
+      color: new THREE.Color(0xffffff),
     });
   }
 }

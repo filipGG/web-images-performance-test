@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import { ImageDefTile } from './tile-json-loader';
 import { Loader } from '../loader';
 import { ImageQuality } from './tile';
 import { FPTile } from './fp_def_types';
@@ -29,7 +28,6 @@ export class THREE_FPTile extends THREE.Group {
   }
 
   public outsideView() {
-    //this.visible = false;
     this._quality = undefined;
     this._layers.forEach((layer) => layer.unload());
   }

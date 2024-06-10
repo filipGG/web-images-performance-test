@@ -5,6 +5,7 @@ import { Tile } from './tile';
 import { Loader } from '../loader';
 import { FPTile, loadFPDef512 } from './fp_def_types';
 import { THREE_FPTile } from './fp-tile';
+import { DebounceTimer } from '../debounce-timer';
 
 export class SimpleTileViewer {
   private readonly _renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -14,6 +15,8 @@ export class SimpleTileViewer {
 
   private readonly _loader = new Loader();
   private readonly _intervalHandle?: any;
+
+  private readonly debounceTimer = new DebounceTimer(100);
 
   private readonly _tiles: THREE_FPTile[] = [];
 
@@ -38,18 +41,20 @@ export class SimpleTileViewer {
 
     this.createTiles();
 
+    this.debounceTimer.onTrigger = () => this.updateZoomLevel();
+
     this._intervalHandle = setInterval(() => {
       this._controls.update();
 
       if (this._shouldRerender) {
-        this.updateZoomLevel();
+        this.debounceTimer.queueTrigger();
         this._renderer.render(this._scene, this._camera);
         this._shouldRerender = false;
       }
     }, 16);
   }
 
-  private async updateZoomLevel() {
+  private updateZoomLevel() {
     const { inView, outsideView } = this.getTilesInCameraView();
 
     for (const tile of inView) {
@@ -107,7 +112,13 @@ export class SimpleTileViewer {
     return { inView, outsideView };
   }
 
-  private isTileInView(tile: THREE_FPTile, left: number, right: number, top: number, bottom: number) {
+  private isTileInView(
+    tile: THREE_FPTile,
+    left: number,
+    right: number,
+    top: number,
+    bottom: number,
+  ) {
     if (
       tile.position.x > left &&
       tile.position.x < right &&

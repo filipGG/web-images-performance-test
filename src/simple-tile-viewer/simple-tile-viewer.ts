@@ -3,6 +3,8 @@ import { OrbitControls } from 'three/examples/jsm/Addons.js';
 import { ImageDefTile, getImageDef256, getImageDef512 } from './tile-json-loader';
 import { Tile } from './tile';
 import { Loader } from '../loader';
+import { FPTile, loadFPDef512 } from './fp_def_types';
+import { THREE_FPTile } from './fp-tile';
 
 export class SimpleTileViewer {
   private readonly _renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -13,7 +15,7 @@ export class SimpleTileViewer {
   private readonly _loader = new Loader();
   private readonly _intervalHandle?: any;
 
-  private readonly _tiles: Tile[] = [];
+  private readonly _tiles: THREE_FPTile[] = [];
 
   private _shouldRerender = true;
 
@@ -60,21 +62,19 @@ export class SimpleTileViewer {
   }
 
   private async createTiles() {
-    const imageDef = getImageDef512();
-    const tilesWithData = imageDef.Tiles.filter((tile) => tile.dataUrl != undefined);
+    const FP_DEF_512 = loadFPDef512();
 
-    for (const tile of tilesWithData) {
-      await this.addWithTexture(tile);
+    for (const tile of FP_DEF_512.Tiles) {
+      await this.addTile(tile);
     }
   }
 
-  private async addWithTexture(tile: ImageDefTile) {
-    const tileMesh = new Tile(tile, this._loader);
-    this._tiles.push(tileMesh);
-    this._scene.add(tileMesh);
-
-    tileMesh.position.x -= 6000;
-    tileMesh.position.y -= 6000;
+  private async addTile(tile: FPTile) {
+    const threeTile = new THREE_FPTile(tile, this._loader);
+    this._tiles.push(threeTile);
+    this._scene.add(threeTile);
+    threeTile.position.x -= 6000;
+    threeTile.position.y -= 6000;
   }
 
   private getTilesInCameraView() {
@@ -91,8 +91,8 @@ export class SimpleTileViewer {
     const top = this._camera.position.y + topDownLengthHalf;
     const bottom = this._camera.position.y - topDownLengthHalf;
 
-    const inView: Tile[] = [];
-    const outsideView: Tile[] = [];
+    const inView: THREE_FPTile[] = [];
+    const outsideView: THREE_FPTile[] = [];
 
     for (let i = 0; i < this._tiles.length; i++) {
       const tile = this._tiles[i];
@@ -107,7 +107,7 @@ export class SimpleTileViewer {
     return { inView, outsideView };
   }
 
-  private isTileInView(tile: Tile, left: number, right: number, top: number, bottom: number) {
+  private isTileInView(tile: THREE_FPTile, left: number, right: number, top: number, bottom: number) {
     if (
       tile.position.x > left &&
       tile.position.x < right &&

@@ -70,7 +70,11 @@ export class SimpleTileViewer {
     const FP_DEF_512 = loadFPDef512();
 
     for (const tile of FP_DEF_512.Tiles) {
-      await this.addTile(tile);
+      const shouldAdd = tile.Layers.filter((layer) => layer.Images != undefined).length > 0;
+
+      if (shouldAdd) {
+        await this.addTile(tile);
+      }
     }
   }
 

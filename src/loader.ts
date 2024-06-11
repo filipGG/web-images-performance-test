@@ -14,7 +14,7 @@ export class Loader {
   private _isProcessing = false;
 
   constructor() {
-    this._imageBitmapLoader.setOptions({ imageOrientation: 'flipY' });
+    //this._imageBitmapLoader.setOptions({ imageOrientation: 'flipY' });
     this._imageBitmapLoader.manager.onLoad = () => {
       this.onLoad();
     };

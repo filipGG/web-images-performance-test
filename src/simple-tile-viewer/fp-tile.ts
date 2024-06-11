@@ -1,19 +1,20 @@
 import * as THREE from 'three';
 import { Loader } from '../loader';
 import { ImageQuality } from './tile';
-import { FPTile } from './fp_def_types';
-import { THREE_FPTileLayer } from './fp-tile-layer';
+import { FPTile, FPTileLayerImages } from './fp_def_types';
 
-export class THREE_FPTile extends THREE.Group {
+export class THREE_FPTile extends THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial> {
   private _quality?: ImageQuality;
 
-  private _layers: THREE_FPTileLayer[] = [];
+  private _images: FPTileLayerImages[] = [];
 
   constructor(
     private readonly _fpTile: FPTile,
     private readonly _loader: Loader,
   ) {
     super();
+
+    this.populateImages();
 
     this.setup();
   }
@@ -29,7 +30,18 @@ export class THREE_FPTile extends THREE.Group {
 
   public outsideView() {
     this._quality = undefined;
-    this._layers.forEach((layer) => layer.unload());
+
+    this.material.map?.dispose();
+    this.material.map = null;
+    this.material.needsUpdate = true;
+  }
+
+  private populateImages() {
+    this._fpTile.Layers.forEach((layer) => {
+      if (layer.Images) {
+        this._images.push(layer.Images);
+      }
+    });
   }
 
   private getQuality(cameraZ: number) {
@@ -45,27 +57,57 @@ export class THREE_FPTile extends THREE.Group {
   }
 
   private async load(quality: ImageQuality) {
-    for (const layer of this._layers) {
-      await layer.load(quality);
+    if (this._images.length === 0) {
+      return;
     }
+
+    const promises = this._images.map((img) => this._loader.load(this.getDataUrl(img, quality)));
+    const textures = await Promise.all(promises);
+
+    const canvas = document.createElement('canvas');
+    canvas.width = textures[0].image.width;
+    canvas.height = textures[0].image.height;
+    const context = canvas.getContext('2d');
+
+    if (!context) {
+      return;
+    }
+
+    context.globalCompositeOperation = 'source-over';
+
+    textures.forEach((texture) => {
+      context.drawImage(texture.image, 0, 0);
+    });
+
+    const combinedTexture = new THREE.CanvasTexture(canvas);
+
+    textures.forEach((tex) => tex.dispose());
+
+    this.material.map?.dispose();
+    this.material.map = combinedTexture;
+    this.material.needsUpdate = true;
   }
 
   private async setup() {
     this.position.x = this._fpTile.X;
     this.position.y = this._fpTile.Y;
 
-    this._fpTile.Layers.forEach((layer) => {
-      if (layer.Images) {
-        const threeLayer = new THREE_FPTileLayer(
-          this._fpTile.Width,
-          this._fpTile.Height,
-          layer.Images,
-          this._loader,
-        );
-
-        this._layers.push(threeLayer);
-        this.add(threeLayer);
-      }
+    this.geometry = new THREE.PlaneGeometry(this._fpTile.Width, this._fpTile.Height);
+    this.material = new THREE.MeshBasicMaterial({
+      transparent: true,
+      color: new THREE.Color(0xffffff),
     });
+  }
+
+  private getDataUrl(images: FPTileLayerImages, quality: ImageQuality) {
+    if (quality == ImageQuality.Low) {
+      return images.Quarter;
+    }
+
+    if (quality == ImageQuality.Medium) {
+      return images.Half;
+    }
+
+    return images.Full;
   }
 }

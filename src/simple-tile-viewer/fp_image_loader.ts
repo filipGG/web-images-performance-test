@@ -8,7 +8,8 @@ interface Job {
 }
 
 export class FloorPlanImageLoader {
-  private readonly _workerUrl = new URL('./worker-v2.ts', import.meta.url);
+  private readonly _worlerBaseUri = document.baseURI + 'src/simple-tile-viewer/';
+  private readonly _workerUrl = new URL('./worker-v2.ts', this._worlerBaseUri);
   private readonly _worker = new Worker(this._workerUrl, { type: 'module' });
 
   private readonly _jobs = new Map<string, Job>();

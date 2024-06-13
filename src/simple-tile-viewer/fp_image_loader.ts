@@ -14,6 +14,7 @@ export class FloorPlanImageLoader {
   private readonly _jobs = new Map<string, Job>();
 
   constructor() {
+    console.log('WORKER URL: ', this._workerUrl);
     this._worker.onmessage = this.onWorkerMessage;
   }
 

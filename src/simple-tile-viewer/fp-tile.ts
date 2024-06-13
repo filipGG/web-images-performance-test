@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { Loader } from '../loader';
 import { ImageQuality } from './tile';
 import { FPTile, FPTileLayerImages } from './fp_def_types';
+import { FloorPlanImageLoader } from './fp_image_loader';
 
 export class THREE_FPTile extends THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial> {
   private _quality?: ImageQuality;
@@ -10,7 +11,8 @@ export class THREE_FPTile extends THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasi
 
   constructor(
     private readonly _fpTile: FPTile,
-    private readonly _loader: Loader,
+    //private readonly _loader: Loader,
+    private readonly _fpImageLoader: FloorPlanImageLoader,
   ) {
     super();
 
@@ -61,31 +63,36 @@ export class THREE_FPTile extends THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasi
       return;
     }
 
-    const promises = this._images.map((img) => this._loader.load(this.getDataUrl(img, quality)));
-    const textures = await Promise.all(promises);
-
-    const canvas = document.createElement('canvas');
-    canvas.width = textures[0].image.width;
-    canvas.height = textures[0].image.height;
-    const context = canvas.getContext('2d');
-
-    if (!context) {
-      return;
-    }
-
-    context.globalCompositeOperation = 'source-over';
-
-    textures.forEach((texture) => {
-      context.drawImage(texture.image, 0, 0);
-    });
-
-    const combinedTexture = new THREE.CanvasTexture(canvas);
-
-    textures.forEach((tex) => tex.dispose());
+    const urls = this._images.map((img) => this.getDataUrl(img, quality));
+    const texture = await this._fpImageLoader.prepareTexture(urls);
 
     this.material.map?.dispose();
-    this.material.map = combinedTexture;
+    this.material.map = texture;
     this.material.needsUpdate = true;
+  }
+
+  private flipPixelsCanvas(
+    context: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+    width: number,
+    height: number,
+  ) {
+    console.time('flipPixelsCanvas');
+
+    const imageData = context.getImageData(0, 0, width, height);
+    const data = imageData.data;
+
+    // Invert the pixel values
+    for (let i = 0; i < data.length; i += 4) {
+      // Invert red, green, and blue channels
+      data[i] = 255 - data[i]; // Red
+      data[i + 1] = 255 - data[i + 1]; // Green
+      data[i + 2] = 255 - data[i + 2]; // Blue
+      // Leave alpha channel unchanged
+    }
+
+    // Put the modified image data back onto the canvas
+    context.putImageData(imageData, 0, 0);
+    console.timeEnd('flipPixelsCanvas');
   }
 
   private async setup() {

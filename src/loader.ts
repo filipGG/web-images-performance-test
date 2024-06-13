@@ -42,9 +42,6 @@ export class Loader {
     this._isProcessing = true;
 
     const toBeProcessed = this._queue.splice(0, this._maxParallelLoads);
-    console.log(`Processing ${toBeProcessed.length} loads`);
-    console.time('a');
-
     const promises = toBeProcessed.map(async (item) => {
       try {
         const texture = await this.processLoad(item);
@@ -55,7 +52,6 @@ export class Loader {
     });
 
     await Promise.all(promises);
-    console.timeEnd('a');
 
     this._isProcessing = false;
 

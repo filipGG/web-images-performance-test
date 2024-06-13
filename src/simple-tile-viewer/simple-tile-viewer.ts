@@ -6,6 +6,7 @@ import { Loader } from '../loader';
 import { FPTile, loadFPDef512 } from './fp_def_types';
 import { THREE_FPTile } from './fp-tile';
 import { DebounceTimer } from '../debounce-timer';
+import { FloorPlanImageLoader } from './fp_image_loader';
 
 export class SimpleTileViewer {
   private readonly _renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -14,6 +15,7 @@ export class SimpleTileViewer {
   private readonly _controls: OrbitControls;
 
   private readonly _loader = new Loader();
+  private readonly _fpImageLoader = new FloorPlanImageLoader();
   private readonly _intervalHandle?: any;
 
   private readonly debounceTimer = new DebounceTimer(100);
@@ -46,12 +48,12 @@ export class SimpleTileViewer {
     this._intervalHandle = setInterval(() => {
       this._controls.update();
 
-      if (this._shouldRerender) {
-        this.debounceTimer.queueTrigger();
-        this._renderer.render(this._scene, this._camera);
-        this._shouldRerender = false;
-      }
-    }, 16);
+      //if (this._shouldRerender) {
+      this.debounceTimer.queueTrigger();
+      this._renderer.render(this._scene, this._camera);
+      this._shouldRerender = false;
+      //}
+    });
   }
 
   private updateZoomLevel() {
@@ -79,7 +81,7 @@ export class SimpleTileViewer {
   }
 
   private async addTile(tile: FPTile) {
-    const threeTile = new THREE_FPTile(tile, this._loader);
+    const threeTile = new THREE_FPTile(tile, this._fpImageLoader);
     this._tiles.push(threeTile);
     this._scene.add(threeTile);
     threeTile.position.x -= 6000;

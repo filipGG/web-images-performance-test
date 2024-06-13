@@ -18,6 +18,7 @@
     "webdriverio": "^8.35.1"
   },
   "dependencies": {
-    "three": "^0.160.0"
+    "three": "^0.160.0",
+    "uuid": "^10.0.0"
   }
 }

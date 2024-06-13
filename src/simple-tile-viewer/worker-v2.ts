@@ -48,7 +48,6 @@ self.onmessage = async (e: MessageEvent<WorkerInput>) => {
   const imageData = context.getImageData(0, 0, width, height);
   const data = imageData.data;
 
-  /*
   // Invert the pixel values
   for (let i = 0; i < data.length; i += 4) {
     // Invert red, green, and blue channels
@@ -56,7 +55,6 @@ self.onmessage = async (e: MessageEvent<WorkerInput>) => {
     data[i + 1] = 0;
     data[i + 2] = 0;
   }
-  */
 
   result.textureResult = {
     arr: data,

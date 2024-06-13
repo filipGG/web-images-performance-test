@@ -11,7 +11,6 @@ export class THREE_FPTile extends THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasi
 
   constructor(
     private readonly _fpTile: FPTile,
-    //private readonly _loader: Loader,
     private readonly _fpImageLoader: FloorPlanImageLoader,
   ) {
     super();
@@ -19,23 +18,7 @@ export class THREE_FPTile extends THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasi
     this.populateImages();
 
     this.setup();
-  }
-
-  public insideView(cameraZ: number) {
-    const quality = this.getQuality(cameraZ);
-
-    if (this._quality != quality) {
-      this._quality = quality;
-      this.load(this._quality);
-    }
-  }
-
-  public outsideView() {
-    this._quality = undefined;
-
-    this.material.map?.dispose();
-    this.material.map = null;
-    this.material.needsUpdate = true;
+    this.load();
   }
 
   private populateImages() {
@@ -58,41 +41,17 @@ export class THREE_FPTile extends THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasi
     return ImageQuality.High;
   }
 
-  private async load(quality: ImageQuality) {
+  private async load() {
     if (this._images.length === 0) {
       return;
     }
 
-    const urls = this._images.map((img) => this.getDataUrl(img, quality));
+    const urls = this._images.map((img) => img.Full);
     const texture = await this._fpImageLoader.prepareTexture(urls);
 
     this.material.map?.dispose();
     this.material.map = texture;
     this.material.needsUpdate = true;
-  }
-
-  private flipPixelsCanvas(
-    context: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
-    width: number,
-    height: number,
-  ) {
-    console.time('flipPixelsCanvas');
-
-    const imageData = context.getImageData(0, 0, width, height);
-    const data = imageData.data;
-
-    // Invert the pixel values
-    for (let i = 0; i < data.length; i += 4) {
-      // Invert red, green, and blue channels
-      data[i] = 255 - data[i]; // Red
-      data[i + 1] = 255 - data[i + 1]; // Green
-      data[i + 2] = 255 - data[i + 2]; // Blue
-      // Leave alpha channel unchanged
-    }
-
-    // Put the modified image data back onto the canvas
-    context.putImageData(imageData, 0, 0);
-    console.timeEnd('flipPixelsCanvas');
   }
 
   private async setup() {

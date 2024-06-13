@@ -14,11 +14,8 @@ export class SimpleTileViewer {
   private readonly _camera = new THREE.PerspectiveCamera();
   private readonly _controls: OrbitControls;
 
-  private readonly _loader = new Loader();
-  private readonly _fpImageLoader = new FloorPlanImageLoader();
+  private readonly _loader = new FloorPlanImageLoader();
   private readonly _intervalHandle?: any;
-
-  private readonly debounceTimer = new DebounceTimer(100);
 
   private readonly _tiles: THREE_FPTile[] = [];
 
@@ -43,97 +40,34 @@ export class SimpleTileViewer {
 
     this.createTiles();
 
-    this.debounceTimer.onTrigger = () => this.updateZoomLevel();
-
     this._intervalHandle = setInterval(() => {
       this._controls.update();
 
-      //if (this._shouldRerender) {
-      this.debounceTimer.queueTrigger();
-      this._renderer.render(this._scene, this._camera);
-      this._shouldRerender = false;
-      //}
+      if (this._shouldRerender) {
+        this._renderer.render(this._scene, this._camera);
+        this._shouldRerender = false;
+      }
     });
   }
 
-  private updateZoomLevel() {
-    const { inView, outsideView } = this.getTilesInCameraView();
-
-    for (const tile of inView) {
-      tile.insideView(this._camera.position.z);
-    }
-
-    for (const tile of outsideView) {
-      tile.outsideView();
-    }
-  }
-
-  private async createTiles() {
+  private createTiles() {
     const FP_DEF_512 = loadFPDef512();
 
     for (const tile of FP_DEF_512.Tiles) {
       const shouldAdd = tile.Layers.filter((layer) => layer.Images != undefined).length > 0;
 
       if (shouldAdd) {
-        await this.addTile(tile);
+        this.addTile(tile);
       }
     }
   }
 
   private async addTile(tile: FPTile) {
-    const threeTile = new THREE_FPTile(tile, this._fpImageLoader);
+    const threeTile = new THREE_FPTile(tile, this._loader);
     this._tiles.push(threeTile);
     this._scene.add(threeTile);
     threeTile.position.x -= 6000;
     threeTile.position.y -= 6000;
-  }
-
-  private getTilesInCameraView() {
-    const topDownRatio = this._camera.getFilmHeight() / this._camera.getFocalLength();
-    const topDownLength = topDownRatio * this._camera.position.z;
-    const topDownLengthHalf = topDownLength / 2;
-
-    const leftRightRatio = this._camera.getFilmWidth() / this._camera.getFocalLength();
-    const leftRightLength = leftRightRatio * this._camera.position.z;
-    const leftRightLengthHalf = leftRightLength / 2;
-
-    const left = this._camera.position.x - leftRightLengthHalf;
-    const right = this._camera.position.x + leftRightLengthHalf;
-    const top = this._camera.position.y + topDownLengthHalf;
-    const bottom = this._camera.position.y - topDownLengthHalf;
-
-    const inView: THREE_FPTile[] = [];
-    const outsideView: THREE_FPTile[] = [];
-
-    for (let i = 0; i < this._tiles.length; i++) {
-      const tile = this._tiles[i];
-
-      if (this.isTileInView(tile, left, right, top, bottom)) {
-        inView.push(tile);
-      } else {
-        outsideView.push(tile);
-      }
-    }
-
-    return { inView, outsideView };
-  }
-
-  private isTileInView(
-    tile: THREE_FPTile,
-    left: number,
-    right: number,
-    top: number,
-    bottom: number,
-  ) {
-    if (
-      tile.position.x > left &&
-      tile.position.x < right &&
-      tile.position.y < top &&
-      tile.position.y > bottom
-    ) {
-      return true;
-    }
-    return false;
   }
 
   private configureRenderer() {

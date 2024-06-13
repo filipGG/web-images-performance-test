@@ -17,6 +17,8 @@ export class FloorPlanImageLoader {
     this._worker.onmessage = this.onWorkerMessage;
   }
 
+  public onLoad = () => undefined;
+
   public prepareTexture(imageUrls: string[]): Promise<THREE.DataTexture> {
     const workerInput: WorkerInput = {
       imageUrls,
@@ -54,5 +56,7 @@ export class FloorPlanImageLoader {
     texture.generateMipmaps = true;
     texture.needsUpdate = true;
     job.res(texture);
+
+    this.onLoad();
   };
 }

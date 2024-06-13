@@ -2,20 +2,19 @@ import * as THREE from 'three';
 import { generateUUID } from 'three/src/math/MathUtils.js';
 import { WorkerInput, WorkerResult } from './worker-v2';
 
+import all from './worker-v2?worker&url';
+
 interface Job {
   res: (texture: THREE.DataTexture) => void;
   rej: (msg: string) => void;
 }
 
 export class FloorPlanImageLoader {
-  private readonly _worlerBaseUri = document.baseURI + 'src/simple-tile-viewer/';
-  private readonly _workerUrl = new URL('./worker-v2.ts', this._worlerBaseUri);
-  private readonly _worker = new Worker(this._workerUrl, { type: 'module' });
+  private readonly _worker = new Worker(all, { type: 'module' });
 
   private readonly _jobs = new Map<string, Job>();
 
   constructor() {
-    console.log('WORKER URL: ', this._workerUrl);
     this._worker.onmessage = this.onWorkerMessage;
   }
 
